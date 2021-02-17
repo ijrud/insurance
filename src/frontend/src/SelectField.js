@@ -30,7 +30,7 @@ class SelectField extends Component{
       }
 
       render() {
-        const { classes, helpText, label, placeholder, value, errorText, options, onValueChanged} = this.props;
+        const { classes, helpText, label, placeholder, value, errorText, options, onValueChanged, disabled} = this.props;
         const { error } = this.state;
 
 
@@ -41,6 +41,7 @@ class SelectField extends Component{
                 </Grid>
                 <Grid item>
                     <select 
+                        disabled={disabled}
                         value={this.state.value}
                         onChange={(e)=>onValueChanged(e.target.value)}
                         className={classes.selectField}

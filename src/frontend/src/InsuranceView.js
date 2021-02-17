@@ -28,38 +28,45 @@ const styles = theme => ({
 
 const intRegExp = /^\d*$/
 const emailRegExp = /\S+@\S+\.\S+/
-const personalNumberRegExp = /^\d{11}$/
+const personalIdRegExp = /^\d{11}$/
 
 class InsuranceView extends Component { 
 
     constructor(props) {
         super(props);
         this.state = {
-          registrationNumber: "",
+          licencePlate: "",
           bonus: "Bonus A",
-          personalNumber: "",
+          personalId: "",
           firstName: "",
           lastName: "",
           email: "",
+
+          //TODO: The state could be an enum...
+          success: false,
+          failed: false,
+          working: false,
+          agreementStatus: null,
+          agreementId: ''
         };
       }
 
     areFieldsValid() {
-        const {registrationNumber, bonus, personalNumber, email, firstName, lastName} = this.state;
+        const {licencePlate, bonus, personalId, email, firstName, lastName} = this.state;
         let errorTextList = [];
-        if (registrationNumber.length < 0) {
+        if (licencePlate.length < 1) {
             return false;
         }
-        if (bonus.length < 0) {
+        if (bonus.length < 1) {
             return false;
         }
-        if (!personalNumberRegExp.test(personalNumber)) {
+        if (!personalIdRegExp.test(personalId)) {
             return false;
         }
-        if (firstName.length < 0) {
+        if (firstName.length < 1) {
             return false;
         }
-        if (lastName.length < 0) {
+        if (lastName.length < 1) {
             return false;
         }
         if(!emailRegExp.test(email)) {
@@ -70,28 +77,61 @@ class InsuranceView extends Component {
     }
 
     onBuyClicked() {
+        const {licencePlate, bonus, personalId, email, firstName, lastName} = this.state;
+
         
+        const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({  firstName: firstName,
+                                    lastName: lastName,
+                                    email: email,
+                                    bonus: bonus,
+                                    personalId: personalId,
+                                    licencePlate: licencePlate})
+        };
+
+        this.setState({working: true}, ()=>{
+            // When server is not runnin on localhost, we should use https, but for now, use http
+            fetch('http://localhost:8080/api/insurances', requestOptions)
+            .then(res => res.json())
+            .then((data) => {
+                let createdAgreement = data.agreementId !== null;
+                this.setState({ working: false, success: createdAgreement, failed: !createdAgreement, agreementStatus: data.agreementStatus, agreementId: data.agreementId});
+                console.log(data);
+            })
+            .catch((err)=>{
+                console.log(err);
+                this.setState({working: false, success: false, failed: true})
+            })
+        });
     }
 
     onCancelClicked() {
         this.setState({
-            registrationNumber: "",
-            bonus: "",
-            personalNumber: "",
+            licencePlate: "",
+            bonus: "Bonus A",
+            personalId: "",
             firstName: "",
             lastName: "",
             email: "",
+            success: false,
+            failed: false,
+            agreementStatus: null,
           });
     }
 
     render(){
         const {classes} = this.props;
-        const { registrationNumber, bonus, personalNumber, firstName, lastName, email } = this.state;
+        const { licencePlate, bonus, personalId, firstName, lastName, email, working, failed, success, agreementId, agreementStatus} = this.state;
+
+        // TODO: Add working indicator
+        let disableFields = working || failed || success
 
         let validFields = this.areFieldsValid();
 
         return(
-            <Grid container direction="column" spacing={2}>
+            <Grid container direction="column" spacing={2} >
                 <Grid item>
                     <h1>Kjøp Bilforsikring</h1>
                 </Grid>
@@ -103,41 +143,45 @@ class InsuranceView extends Component {
                 </Grid>
                 <Grid item>
                     <InputField
+                        disabled={disableFields}
                         label="Bilens registreringsnummer"
                         type="text"
-                        value={registrationNumber}
+                        value={licencePlate}
                         validInput={/^[A-Za-z0-9 ]*$/}
                         placeholder="E.g. AB 12345"
-                        onValueChanged={(value)=> this.setState({registrationNumber: value.toUpperCase()})}
+                        onValueChanged={(value)=> this.setState({licencePlate: value.toUpperCase()})}
                     />
                 </Grid>
                 <Grid item>
                     <SelectField
+                        disabled={disableFields}
                         label="Din bonus"
                         type="text"
                         value={bonus}
                         options={["Bonus A", "Bonus B", "Bonus C"]}
                         placeholder="Placeholder"
-                        helpText="Hjelpetekst/feilmeldingstekst"
+                        helpText="Velg din bonusordning"
                         onValueChanged={(value)=>this.setState({bonus: value})}
                     />
                 </Grid>
                 <Grid item>
                     <InputField
+                        disabled={disableFields}
                         label="Fødselsnummer"
                         type="text"
-                        value={personalNumber}
+                        value={personalId}
                         validInput={/^\d{0,11}$/}
                         regExp={/^\d{11}$/}
                         placeholder="11 siffer"
                         errorText="Skriv inn 11 siffer"
-                        onValueChanged={(value)=>this.setState({personalNumber: value})}
+                        onValueChanged={(value)=>this.setState({personalId: value})}
                     />
                 </Grid>
                 <Grid item>
                     <Grid container direction="row" spacing={2}>
                         <Grid item>
                             <InputField
+                                disabled={disableFields}
                                 label="Fornavn"
                                 type="text"
                                 validInput={/^[A-Za-z ]*$/}
@@ -147,6 +191,7 @@ class InsuranceView extends Component {
                         </Grid>
                         <Grid item>
                             <InputField
+                                disabled={disableFields}
                                 label="Etternavn"
                                 type="text"
                                 value={lastName}
@@ -157,6 +202,7 @@ class InsuranceView extends Component {
                 </Grid>
                 <Grid item>
                     <InputField
+                        disabled={disableFields}
                         label="Epost"
                         type="text"
                         value={email}
@@ -169,13 +215,18 @@ class InsuranceView extends Component {
                 <Grid item>
                     <Grid container direction="row" spacing={2}>
                         <Grid item>
-                            <Button className={ classes.buyButton } disabled={!validFields} onClick={this.onBuyClicked.bind(this)}>Kjøp</Button>
+                            <Button className={ classes.buyButton } disabled={!validFields || disableFields} onClick={this.onBuyClicked.bind(this)}>Kjøp</Button>
                         </Grid>
                         <Grid item>
-                            <Button variant="outlined" className={ classes.cancelButton } onClick={this.onCancelClicked.bind(this)}>Avbryt</Button>
+                            <Button variant="outlined" disabled={working} className={ classes.cancelButton } onClick={this.onCancelClicked.bind(this)}>Avbryt</Button>
                         </Grid>
                     </Grid>
                 </Grid>
+                {disableFields &&
+                    <Grid item>
+                        <Typography>{working ? "Jobber..." : success ? "Avtale #" + agreementId + " opprettet. Status: " + agreementStatus : failed ? "Kunne ikke opprette avtale. Status: " + agreementStatus: "Ukjent feil!"}</Typography>
+                    </Grid>
+                }
               </Grid>
         )
     }

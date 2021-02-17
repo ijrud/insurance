@@ -37,7 +37,6 @@ class InputField extends Component{
         }
 
         if (regExp) {
-            console.log(value)
             let error = !regExp.test(value) && value.length !== 0;
             this.setState({error: error});
         }
@@ -46,7 +45,7 @@ class InputField extends Component{
     }
 
     render(){
-        const { classes, helpText, label, placeholder, value, errorText } = this.props;
+        const { classes, helpText, label, placeholder, value, errorText, disabled } = this.props;
         const { error } = this.state;
 
         return(
@@ -56,6 +55,7 @@ class InputField extends Component{
                 </Grid>
                 <Grid item>
                     <input 
+                        disabled = {disabled}
                         className={classes.inputField}
                         type="text"
                         value={value}

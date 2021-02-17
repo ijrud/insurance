@@ -14,18 +14,30 @@ public class Insurance {
 	
 	@Id
 	@Column
-    private long id;
+    public long id;
 
     @Column
     @NotNull(message="{NotNull.Insurance.firstName}")
-    private String firstName;
+    public String firstName;
     
     @Column
     @NotNull(message="{NotNull.Insurance.lastName}")
-    private String lastName;
+    public String lastName;
     
     @Column
     @NotNull(message="{NotNull.Insurance.email}")
-    private String email;
+    public String email;
 
+    @Column
+    @NotNull(message="{NotNull.Insurance.bonus}")
+    public String bonus;
+    
+    @Column
+    @NotNull(message="{NotNull.Insurance.personalId}")
+    public String personalId;
+    
+    @Column
+    @NotNull(message="{NotNull.Insurance.licencePlate}")
+    public String licencePlate;
+    
 }
